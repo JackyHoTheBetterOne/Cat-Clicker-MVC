@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<script type="text/javascript">
+  document.addEventListener("DOMContentLoaded", function(event){
+    (function(){
+      var Model = (function () {
+        function Cat (name) {
+          this.name = name;
+          this.img =
+            "https://farm2.staticflickr.com/1416/576747644_fbe759b551_b.jpg";
+          this.count = 0;
+        }
+
+        var
+          cat_name_array = ["buddy", "chucky", "candy"],
+          cat_array = [];
+
+        return {
+          current_cat: null,
+          init: function () {
+            cat_array = [];
+            for(var i = 0; i<cat_name_array.length; i++) {
+              cat_array.push(
+                new Cat(cat_name_array[i])
+              );
+            }
+            this.current_cat = cat_array[0];
+          },
+
+          increaseCount: function () {
+            return this.current_cat.count += 1;
+          },
+
+          getCats: function (index) {
+            return typeof index === "undefined" ?
+              cat_array : cat_array[index];
+          },
+
+          setCurrentCat: function (index) {
+            this.current_cat = cat_array[index];
+          },
+
+          updateCat: function (obj, callback) {
+            var self = this;
+            for(var prop in obj) {
+              self.current_cat[prop] = obj[prop];
+            }
+            debugger;
+            callback.call();
+          }
+        }
+      })();
+
+      var Octopus = (function () {
+        return {
+          increase_count_event: function (event) {
+            var new_count = Model.increaseCount();
+            View.update_count(new_count);
+          },
+
+          attach_cat_event: function (index) {
+            var cat = Model.getCats(index);
+            Model.setCurrentCat(index);
+            View.update_cat_display(cat);
+          },
+
+          toggle_admin_event: function () {
+            View.toggle_admin_display();
+          },
+
+          update_cat_event: function () {
+            var
+              form_obj = View.grab_form_data(),
+              current_cat = Model.current_cat,
+              current_cat_name = current_cat.name;
+
+            View.update_li(current_cat_name, form_obj.name);
+
+            Model.updateCat(
+              form_obj,
+              View.update_cat_display.bind(null, current_cat)
+            );
+          },
+
+          cancel_submit_event: function () {
+            View.update_cat_display(Model.current_cat);
+          },
+
+          init: function () {
+            Model.init();
+            View.init(Model.getCats());
+          }
+        }
+      })();
+
+      var View = (function(){
+        var
+          li_class = "cat-li",
+          cat_list = document.getElementById("cat-list"),
+          cat_name = document.getElementById("cat-name"),
+          cat_pic = document.getElementById("cute-cat"),
+          cat_count = document.getElementById("cat-count"),
+          cat_inputs = [
+            document.getElementById("cat-name-input"),
+            document.getElementById("cat-img-input"),
+            document.getElementById("cat-count-input")
+          ],
+          admin_toggle = document.getElementById("admin-button"),
+          admin_panel = document.getElementById("admin-panel"),
+          submit_but = document.getElementById("submit-cat"),
+          cancel_but = document.getElementById("cancel-edit"),
+          cat_items;
+
+        function attachCatList (cat_arr) {
+          for(var i = 0; i<cat_arr.length; i++) {
+            var
+              ls = document.createElement("li"),
+              cat = cat_arr[i],
+              first_cat_index = 0;
+
+            ls.innerHTML = cat.name;
+            ls.setAttribute("class", li_class);
+            ls.setAttribute("id", cat.name);
+            cat_list.appendChild(ls);
+          }
+        }
+
+        function updateCatForm (cat) {
+          for (var i = 0; i<cat_inputs.length; i++) {
+            var
+              input = cat_inputs[i],
+              name = input.getAttribute("name");
+
+            input.value = cat[name];
+          }
+        }
+
+        function grabCatFormData () {
+          var obj = {};
+          for (var i = 0; i<cat_inputs.length; i++) {
+            var
+              input = cat_inputs[i],
+              name = input.getAttribute("name"),
+              value = input.value;
+
+            obj[name] = value;
+          }
+          return obj;
+        }
+
+        return {
+          init: function (arr) {
+            var
+              self = this,
+              first_cat_index = 0;
+
+            attachCatList(arr);
+
+            cat_items = document.getElementsByClassName(li_class);
+
+            cat_pic.addEventListener("click",
+              Octopus.increase_count_event);
+
+            admin_toggle.addEventListener("click",
+              Octopus.toggle_admin_event);
+
+            submit_but.addEventListener("click",
+              Octopus.update_cat_event)
+
+            cancel_but.addEventListener("click",
+              Octopus.cancel_submit_event)
+
+            for(var i = 0; i < cat_items.length; i++) {
+              cat_items[i].addEventListener("click",
+                (function () {
+                  return Octopus.attach_cat_event.bind(null, i)
+                })()
+              );
+            }
+
+            self.update_cat_display(arr[first_cat_index]);
+            admin_panel.style["display"] = "none";
+          },
+
+          update_cat_display: function(cat) {
+            cat_pic.setAttribute("src", cat.img);
+            cat_name.innerHTML = cat.name;
+            View.update_count(cat.count);
+            updateCatForm(cat);
+          },
+
+          update_count: function(count) {
+            cat_count.innerHTML = count;
+          },
+
+          toggle_admin_display: function () {
+            var current_display = admin_panel.style["display"];
+
+            admin_panel.style["display"] = current_display === "none" ?
+              "initial" : "none";
+          },
+
+          grab_form_data: function () {
+            return grabCatFormData();
+          },
+
+          update_li: function (old_name, new_name) {
+            var element = document.getElementById(old_name);
+
+            element.innerHTML = new_name;
+            element.setAttribute("id", new_name);
+          }
+        }
+      })();
+      Octopus.init();
+    })()
+  })
+</script>
+
+<body>
+  <ls id="cat-list">
+  </ls>
+  <h1 id="cat-name">
+  </h1>
+  <img id= "cute-cat" src="" />
+  <p> Number of clicks:
+    <span id="cat-count">
+    </span>
+  </p>
+  <button id="admin-button">
+    Admin
+  </button>
+  <div id="admin-panel">
+    <input type="text" placeholder="name"
+      name="name" id="cat-name-input"/>
+    <input type="text" placeholder="url"
+      name="img" id="cat-img-input"/>
+    <input type="text" placeholder="count"
+      name="count" id="cat-count-input"/>
+    <button id="submit-cat">Submit</button>
+    <button id="cancel-edit">Cancel</button>
+  </div>
+</body>
+</html>
